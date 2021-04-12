@@ -29,6 +29,7 @@ logging.basicConfig(level=logging.INFO)
 # Когда он откажется купить слона,
 # то мы уберем одну подсказку. Как будто что-то меняется :)
 sessionStorage = {}
+buy_things = ['слона', 'кролика']
 
 
 @app.route('/post', methods=['POST'])
@@ -46,7 +47,7 @@ def main():
         'version': request.json['version'],
         'response': {
             'end_session': False,
-            'elephant_purchased': False
+            'what_buy': buy_things[0]
         }
     }
 
@@ -77,7 +78,7 @@ def handle_dialog(req, res):
             ]
         }
         # Заполняем текст ответа
-        res['response']['text'] = 'Привет! Купи слона!'
+        res['response']['text'] = f'Привет! Купи {res["response"]["what_buy"]}!'
         # Получим подсказки
         res['response']['buttons'] = get_suggests(user_id)
         return
@@ -97,10 +98,14 @@ def handle_dialog(req, res):
         'я куплю',
         'я покупаю',
         'хорошо'
-    ] and not res['response']['elephant_purchased']:
-        # Пользователь согласился, прощаемся.
-        res['response']['elephant_purchased'] = True
-        res['response']['text'] = 'Слона можно найти на Яндекс.Маркете! А пока еще купите кролика'
+    ] and res["response"]["what_buy"] != buy_things[-1]:
+        # Пользователь согласился, продолжаем предлагать товары.
+        index_what_buy = buy_things.index(res["response"]["what_buy"])
+        next_thing = buy_things[index_what_buy + 1]
+        res['response']['text'] = f'{res["response"]["what_buy"]} можно найти на ' \
+                                  f'Яндекс.Маркете! А пока еще купите {next_thing}'.capitalize()
+        res["response"]["what_buy"] = next_thing
+        res['response']['buttons'] = get_suggests(user_id)
         return
 
     if req['request']['original_utterance'].lower() in [
@@ -110,16 +115,15 @@ def handle_dialog(req, res):
         'я куплю',
         'я покупаю',
         'хорошо'
-    ] and res['response']['elephant_purchased']:
+    ] and res["response"]["what_buy"] == buy_things[-1]:
         # Пользователь согласился, прощаемся.
-        res['response']['elephant_purchased'] = True
-        res['response']['text'] = 'Кролика можно найти на Яндекс.Маркете!'
+        res['response']['text'] = f'{res["response"]["what_buy"]} можно найти на Яндекс.Маркете!'
         res['response']['end_session'] = True
         return
 
     # Если нет, то убеждаем его купить слона!
     res['response']['text'] = \
-        f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
+        f"Все говорят '{req['request']['original_utterance']}', а ты купи {res['response']['what_buy']}!"
     res['response']['buttons'] = get_suggests(user_id)
 
 
