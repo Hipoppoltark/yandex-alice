@@ -38,7 +38,6 @@ def main():
         {
             "title": "Помощь",
             "payload": {},
-            "url": "",
             "hide": True
         }
     ]
