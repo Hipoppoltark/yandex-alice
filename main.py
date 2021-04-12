@@ -2,7 +2,6 @@ from flask import Flask, request
 import logging
 import json
 import random
-import os
 
 app = Flask(__name__)
 
@@ -35,13 +34,15 @@ def main():
         'response': {
             'end_session': False,
             "buttons": [
-        {
-            "title": "Помощь",
-            "payload": {},
-            "hide": True
-        }
-    ]
-        }
+                {
+                    "title": "Помощь",
+                    "payload": {
+
+                    },
+                    "hide": True
+                }
+            ]
+        },
     }
     handle_dialog(response, request.json)
     logging.info(f'Response: {response!r}')
@@ -49,6 +50,9 @@ def main():
 
 
 def handle_dialog(res, req):
+    if req['original_utterance'] == 'Помощь':
+        res['response']['text'] = 'Это справка'
+        return
     user_id = req['session']['user_id']
 
     # если пользователь новый, то просим его представиться.
@@ -128,5 +132,4 @@ def get_first_name(req):
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run()
