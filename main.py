@@ -97,9 +97,9 @@ def handle_dialog(req, res):
         'я куплю',
         'я покупаю',
         'хорошо'
-    ] and not res['responce']['elephant_purchased']:
+    ] and not res['response']['elephant_purchased']:
         # Пользователь согласился, прощаемся.
-        res['responce']['elephant_purchased'] = True
+        res['response']['elephant_purchased'] = True
         res['response']['text'] = 'Слона можно найти на Яндекс.Маркете! А пока еще купите кролика'
         return
 
@@ -110,9 +110,9 @@ def handle_dialog(req, res):
         'я куплю',
         'я покупаю',
         'хорошо'
-    ] and res['responce']['elephant_purchased']:
+    ] and res['response']['elephant_purchased']:
         # Пользователь согласился, прощаемся.
-        res['responce']['elephant_purchased'] = True
+        res['response']['elephant_purchased'] = True
         res['response']['text'] = 'Кролика можно найти на Яндекс.Маркете!'
         res['response']['end_session'] = True
         return
@@ -152,3 +152,4 @@ def get_suggests(user_id):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
