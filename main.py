@@ -51,7 +51,7 @@ def main():
 
 
 def handle_dialog(res, req):
-    if 'help' in req['request']['payload']:
+    if 'payload' in req['request'] and 'help' in req['request']['payload']:
         res['response']['text'] = 'Это справка'
         return
     user_id = req['session']['user_id']
