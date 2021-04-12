@@ -33,9 +33,8 @@ def main():
         'session': request.json['session'],
         'version': request.json['version'],
         'response': {
-            'end_session': False
-        },
-        "buttons": [
+            'end_session': False,
+            "buttons": [
         {
             "title": "Помощь",
             "payload": {},
@@ -43,6 +42,7 @@ def main():
             "hide": True
         }
     ]
+        }
     }
     handle_dialog(response, request.json)
     logging.info(f'Response: {response!r}')
