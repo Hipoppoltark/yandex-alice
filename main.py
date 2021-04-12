@@ -38,7 +38,7 @@ def main():
                 {
                     "title": "Помощь",
                     "payload": {
-
+                        "help": True
                     },
                     "hide": True
                 }
@@ -51,7 +51,7 @@ def main():
 
 
 def handle_dialog(res, req):
-    if req['request']['original_utterance'] == 'Помощь':
+    if 'help' in req['request']['playload']:
         res['response']['text'] = 'Это справка'
         return
     user_id = req['session']['user_id']
