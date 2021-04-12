@@ -30,6 +30,7 @@ logging.basicConfig(level=logging.INFO)
 # то мы уберем одну подсказку. Как будто что-то меняется :)
 sessionStorage = {}
 buy_things = ['слона', 'кролика']
+index_things = 0
 
 
 @app.route('/post', methods=['POST'])
@@ -47,7 +48,7 @@ def main():
         'version': request.json['version'],
         'response': {
             'end_session': False,
-            'what_buy': buy_things[0]
+            'what_buy': buy_things[index_things]
         }
     }
 
@@ -63,6 +64,7 @@ def main():
 
 
 def handle_dialog(req, res):
+    global index_things
     user_id = req['session']['user_id']
 
     if req['session']['new']:
@@ -100,11 +102,9 @@ def handle_dialog(req, res):
         'хорошо'
     ] and res["response"]["what_buy"] != buy_things[-1]:
         # Пользователь согласился, продолжаем предлагать товары.
-        index_what_buy = buy_things.index(res["response"]["what_buy"])
-        next_thing = buy_things[index_what_buy + 1]
         res['response']['text'] = f'{res["response"]["what_buy"]} можно найти на ' \
-                                  f'Яндекс.Маркете! А пока еще купите {next_thing}'.capitalize()
-        res["response"]["what_buy"] = next_thing
+                                  f'Яндекс.Маркете! А пока еще купите {buy_things[index_things + 1]}'.capitalize()
+        index_things += 1
         res['response']['buttons'] = get_suggests(user_id)
         return
 
@@ -156,4 +156,5 @@ def get_suggests(user_id):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
 
