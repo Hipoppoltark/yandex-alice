@@ -29,8 +29,14 @@ logging.basicConfig(level=logging.INFO)
 # Когда он откажется купить слона,
 # то мы уберем одну подсказку. Как будто что-то меняется :)
 sessionStorage = {}
-buy_things = ['слона', 'кролика']
-index_things = 0
+answers = [
+        'ладно',
+        'куплю',
+        'покупаю',
+        'я куплю',
+        'я покупаю',
+        'хорошо'
+    ]
 
 
 @app.route('/post', methods=['POST'])
@@ -47,8 +53,7 @@ def main():
         'session': request.json['session'],
         'version': request.json['version'],
         'response': {
-            'end_session': False,
-            'what_buy': buy_things[index_things]
+            'end_session': False
         }
     }
 
@@ -64,7 +69,6 @@ def main():
 
 
 def handle_dialog(req, res):
-    global index_things
     user_id = req['session']['user_id']
 
     if req['session']['new']:
@@ -80,7 +84,7 @@ def handle_dialog(req, res):
             ]
         }
         # Заполняем текст ответа
-        res['response']['text'] = f'Привет! Купи {res["response"]["what_buy"]}!'
+        res['response']['text'] = 'Привет! Купи слона!'
         # Получим подсказки
         res['response']['buttons'] = get_suggests(user_id)
         return
@@ -93,37 +97,15 @@ def handle_dialog(req, res):
     # Если он написал 'ладно', 'куплю', 'покупаю', 'хорошо',
     # то мы считаем, что пользователь согласился.
     # Подумайте, всё ли в этом фрагменте написано "красиво"?
-    if req['request']['original_utterance'].lower() in [
-        'ладно',
-        'куплю',
-        'покупаю',
-        'я куплю',
-        'я покупаю',
-        'хорошо'
-    ] and res["response"]["what_buy"] != buy_things[-1]:
-        # Пользователь согласился, продолжаем предлагать товары.
-        res['response']['text'] = f'{res["response"]["what_buy"]} можно найти на ' \
-                                  f'Яндекс.Маркете! А пока еще купите {buy_things[index_things + 1]}'.capitalize()
-        index_things += 1
-        res['response']['buttons'] = get_suggests(user_id)
-        return
-
-    if req['request']['original_utterance'].lower() in [
-        'ладно',
-        'куплю',
-        'покупаю',
-        'я куплю',
-        'я покупаю',
-        'хорошо'
-    ] and res["response"]["what_buy"] == buy_things[-1]:
+    if filter(lambda x: x in req['request']['original_utterance'].lower(), answers):
         # Пользователь согласился, прощаемся.
-        res['response']['text'] = f'{res["response"]["what_buy"]} можно найти на Яндекс.Маркете!'
+        res['response']['text'] = 'Слона можно найти на Яндекс.Маркете!'
         res['response']['end_session'] = True
         return
 
     # Если нет, то убеждаем его купить слона!
     res['response']['text'] = \
-        f"Все говорят '{req['request']['original_utterance']}', а ты купи {res['response']['what_buy']}!"
+        f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
     res['response']['buttons'] = get_suggests(user_id)
 
 
@@ -156,5 +138,6 @@ def get_suggests(user_id):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
 
 
