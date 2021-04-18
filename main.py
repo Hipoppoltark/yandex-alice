@@ -101,6 +101,7 @@ def handle_dialog(req, res):
     # Подумайте, всё ли в этом фрагменте написано "красиво"?
     if list(filter(lambda x: x in req['request']['original_utterance'].lower(), answers)) and \
             not(res['response']['elephant_is_buy']):
+        res['response']['elephant_is_buy'] = True
         # Пользователь согласился, продолжаем предлагать товары.
         res['response']['text'] = f'Слона можно найти на ' \
                                   f'Яндекс.Маркете! А пока еще купите кролика'
@@ -121,6 +122,7 @@ def handle_dialog(req, res):
         res['response']['buttons'] = get_suggests(user_id, 'слон')
 
     if res['response']['elephant_is_buy']:
+        res['response']['elephant_is_buy'] = True
         # Если нет, то убеждаем его купить кролика!
         res['response']['text'] = \
             f"Все говорят '{req['request']['original_utterance']}', а ты купи кролика!"
@@ -146,7 +148,7 @@ def get_suggests(user_id, text_search):
     if len(suggests) < 2:
         suggests.append({
             "title": "Ладно",
-            "url": "https://market.yandex.ru/search?text=слон",
+            "url": f"https://market.yandex.ru/search?text={text}",
             "hide": True
         })
 
@@ -156,6 +158,5 @@ def get_suggests(user_id, text_search):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
 
 
