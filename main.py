@@ -6,8 +6,8 @@ from geo import get_country, get_distance, get_coordinates
 
 app = Flask(__name__)
 
-# Добавляем логирование в файл. 
-# Чтобы найти файл, перейдите на pythonwhere в раздел files, 
+# Добавляем логирование в файл.
+# Чтобы найти файл, перейдите на pythonwhere в раздел files,
 # он лежит в корневой папке
 logging.basicConfig(level=logging.INFO, filename='app.log',
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
@@ -31,8 +31,7 @@ def main():
 def handle_dialog(res, req):
     user_id = req['session']['user_id']
     if req['session']['new']:
-        res['response']['text'] = \
-            'Привет! Я могу показать город или сказать расстояние между городами!'
+        res['response']['text'] = 'Привет! Я могу показать город или сказать расстояние между городами!'
         return
     # Получаем города из нашего
     cities = get_cities(req)
