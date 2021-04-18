@@ -1,160 +1,63 @@
-# импортируем библиотеки
 from flask import Flask, request
 import logging
-import os
-
-# библиотека, которая нам понадобится для работы с JSON
 import json
+# импортируем функции из нашего второго файла geo
+from geo import get_country, get_distance, get_coordinates
 
-# создаём приложение
-# мы передаём __name__, в нем содержится информация,
-# в каком модуле мы находимся.
-# В данном случае там содержится '__main__',
-# так как мы обращаемся к переменной из запущенного модуля.
-# если бы такое обращение, например,
-# произошло внутри модуля logging, то мы бы получили 'logging'
 app = Flask(__name__)
 
-# Устанавливаем уровень логирования
-logging.basicConfig(level=logging.INFO)
-
-# Создадим словарь, чтобы для каждой сессии общения
-# с навыком хранились подсказки, которые видел пользователь.
-# Это поможет нам немного разнообразить подсказки ответов
-# (buttons в JSON ответа).
-# Когда новый пользователь напишет нашему навыку,
-# то мы сохраним в этот словарь запись формата
-# sessionStorage[user_id] = {'suggests': ["Не хочу.", "Не буду.", "Отстань!" ]}
-# Такая запись говорит, что мы показали пользователю эти три подсказки.
-# Когда он откажется купить слона,
-# то мы уберем одну подсказку. Как будто что-то меняется :)
-sessionStorage = {}
-answers = [
-        'ладно',
-        'куплю',
-        'покупаю',
-        'я куплю',
-        'я покупаю',
-        'хорошо'
-    ]
+# Добавляем логирование в файл. 
+# Чтобы найти файл, перейдите на pythonwhere в раздел files, 
+# он лежит в корневой папке
+logging.basicConfig(level=logging.INFO, filename='app.log',
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
 
 
 @app.route('/post', methods=['POST'])
-# Функция получает тело запроса и возвращает ответ.
-# Внутри функции доступен request.json - это JSON,
-# который отправила нам Алиса в запросе POST
 def main():
-    logging.info(f'Request: {request.json!r}')
-
-    # Начинаем формировать ответ, согласно документации
-    # мы собираем словарь, который потом при помощи
-    # библиотеки json преобразуем в JSON и отдадим Алисе
+    logging.info('Request: %r', request.json)
     response = {
         'session': request.json['session'],
         'version': request.json['version'],
         'response': {
-            'end_session': False,
+            'end_session': False
         }
     }
-
-    # Отправляем request.json и response в функцию handle_dialog.
-    # Она сформирует оставшиеся поля JSON, которые отвечают
-    # непосредственно за ведение диалога
-    handle_dialog_elephant(request.json, response)
-
-    logging.info(f'Response:  {response!r}')
-
-    # Преобразовываем в JSON и возвращаем
+    handle_dialog(response, request.json)
+    logging.info('Request: %r', response)
     return json.dumps(response)
 
 
-def handle_dialog_elephant(req, res):
+def handle_dialog(res, req):
     user_id = req['session']['user_id']
-
     if req['session']['new']:
-        # Это новый пользователь.
-        # Инициализируем сессию и поприветствуем его.
-        # Запишем подсказки, которые мы ему покажем в первый раз
-
-        sessionStorage[user_id] = {
-            'suggests': [
-                "Не хочу.",
-                "Не буду.",
-                "Отстань!",
-            ],
-            'elephant': False
-        }
-        # Заполняем текст ответа
-        res['response']['text'] = f'Привет! Купи слона!'
-        # Получим подсказки
-        res['response']['buttons'] = get_suggests(user_id, 'слон')
-        return
-
-    # Сюда дойдем только, если пользователь не новый,
-    # и разговор с Алисой уже был начат
-    # Обрабатываем ответ пользователя.
-    # В req['request']['original_utterance'] лежит весь текст,
-    # что нам прислал пользователь
-    # Если он написал 'ладно', 'куплю', 'покупаю', 'хорошо',
-    # то мы считаем, что пользователь согласился.
-    # Подумайте, всё ли в этом фрагменте написано "красиво"?
-    if list(filter(lambda x: x in req['request']['original_utterance'].lower(), answers)) and \
-            not(sessionStorage[user_id]['elephant']):
-        sessionStorage[user_id]['elephant'] = True
-        # Пользователь согласился, продолжаем предлагать товары.
-        res['response']['text'] = f'Слона можно найти на ' \
-                                  f'Яндекс.Маркете! А пока еще купите кролика'
-        res['response']['buttons'] = get_suggests(user_id, 'кролик')
-        return
-
-    if list(filter(lambda x: x in req['request']['original_utterance'].lower(), answers)) and \
-            sessionStorage[user_id]['elephant']:
-        # Пользователь согласился, прощаемся.
-        res['response']['text'] = f'Кролика можно найти на Яндекс.Маркете!'
-        res['response']['end_session'] = True
-        return
-
-    if not (sessionStorage[user_id]['elephant']):
-        # Если нет, то убеждаем его купить слона!
         res['response']['text'] = \
-            f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
-        res['response']['buttons'] = get_suggests(user_id, 'слон')
+            'Привет! Я могу показать город или сказать расстояние между городами!'
         return
+    # Получаем города из нашего
+    cities = get_cities(req)
+    if not cities:
+        res['response']['text'] = 'Ты не написал название не одного города!'
+    elif len(cities) == 1:
+        res['response']['text'] = 'Этот город в стране - ' + \
+                                  get_country(cities[0])
+    elif len(cities) == 2:
+        distance = get_distance(get_coordinates(
+            cities[0]), get_coordinates(cities[1]))
+        res['response']['text'] = 'Расстояние между этими городами: ' + \
+                                  str(round(distance)) + ' км.'
+    else:
+        res['response']['text'] = 'Слишком много городов!'
 
-    if sessionStorage[user_id]['elephant']:
-        # Если нет, то убеждаем его купить кролика!
-        res['response']['text'] = \
-            f"Все говорят '{req['request']['original_utterance']}', а ты купи кролика!"
-        res['response']['buttons'] = get_suggests(user_id, 'кролик')
-        return
 
-
-# Функция возвращает две подсказки для ответа.
-def get_suggests(user_id, text_search):
-    session = sessionStorage[user_id]
-
-    # Выбираем две первые подсказки из массива.
-    suggests = [
-        {'title': suggest, 'hide': True}
-        for suggest in session['suggests'][:2]
-    ]
-
-    # Убираем первую подсказку, чтобы подсказки менялись каждый раз.
-    session['suggests'] = session['suggests'][1:]
-    sessionStorage[user_id] = session
-
-    # Если осталась только одна подсказка, предлагаем подсказку
-    # со ссылкой на Яндекс.Маркет.
-    if len(suggests) < 2:
-        suggests.append({
-            "title": "Ладно",
-            "url": f"https://market.yandex.ru/search?text={text_search}",
-            "hide": True
-        })
-
-    return suggests
+def get_cities(req):
+    cities = []
+    for entity in req['request']['nlu']['entities']:
+        if entity['type'] == 'YANDEX.GEO':
+            if 'city' in entity['value']:
+                cities.append(entity['value']['city'])
+    return cities
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run()
