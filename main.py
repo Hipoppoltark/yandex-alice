@@ -49,19 +49,26 @@ def main():
     # Начинаем формировать ответ, согласно документации
     # мы собираем словарь, который потом при помощи
     # библиотеки json преобразуем в JSON и отдадим Алисе
+    try:
+        if list(filter(lambda x: x in request.json['request']['original_utterance'].lower())):
+            elephant = True
+        else:
+            elephant = False
+    except Exception:
+        elephant = False
     response = {
         'session': request.json['session'],
         'version': request.json['version'],
         'response': {
             'end_session': False,
-            'elephant_is_buy': False
+            'elephant_is_buy': elephant
         }
     }
 
     # Отправляем request.json и response в функцию handle_dialog.
     # Она сформирует оставшиеся поля JSON, которые отвечают
     # непосредственно за ведение диалога
-    handle_dialog(request.json, response)
+    handle_dialog_elephant(request.json, response)
 
     logging.info(f'Response:  {response!r}')
 
@@ -69,8 +76,7 @@ def main():
     return json.dumps(response)
 
 
-def handle_dialog(req, res):
-    global index_things
+def handle_dialog_elephant(req, res):
     user_id = req['session']['user_id']
 
     if req['session']['new']:
@@ -128,6 +134,7 @@ def handle_dialog(req, res):
         res['response']['text'] = \
             f"Все говорят '{req['request']['original_utterance']}', а ты купи кролика!"
         res['response']['buttons'] = get_suggests(user_id, 'кролик')
+        return
 
 
 # Функция возвращает две подсказки для ответа.
@@ -159,5 +166,4 @@ def get_suggests(user_id, text_search):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
 
