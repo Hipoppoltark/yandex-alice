@@ -120,6 +120,7 @@ def handle_dialog(req, res):
         res['response']['text'] = \
             f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
         res['response']['buttons'] = get_suggests(user_id, 'слон')
+        return
 
     if res['response']['elephant_is_buy']:
         res['response']['elephant_is_buy'] = True
