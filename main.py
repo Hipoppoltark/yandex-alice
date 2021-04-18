@@ -54,11 +54,7 @@ def main():
         'version': request.json['version'],
         'response': {
             'end_session': False,
-        },
-        "session_state": {
-            'elephant_is_buy': False
         }
-
     }
 
     # Отправляем request.json и response в функцию handle_dialog.
@@ -85,7 +81,8 @@ def handle_dialog_elephant(req, res):
                 "Не хочу.",
                 "Не буду.",
                 "Отстань!",
-            ]
+            ],
+            'elephant': False
         }
         # Заполняем текст ответа
         res['response']['text'] = f'Привет! Купи слона!'
@@ -102,8 +99,8 @@ def handle_dialog_elephant(req, res):
     # то мы считаем, что пользователь согласился.
     # Подумайте, всё ли в этом фрагменте написано "красиво"?
     if list(filter(lambda x: x in req['request']['original_utterance'].lower(), answers)) and \
-            not(res['session_state']['elephant_is_buy']):
-        res['session_state']['elephant_is_buy'] = True
+            not(sessionStorage[user_id]['elephant']):
+        sessionStorage[user_id]['elephant'] = True
         # Пользователь согласился, продолжаем предлагать товары.
         res['response']['text'] = f'Слона можно найти на ' \
                                   f'Яндекс.Маркете! А пока еще купите кролика'
@@ -111,20 +108,20 @@ def handle_dialog_elephant(req, res):
         return
 
     if list(filter(lambda x: x in req['request']['original_utterance'].lower(), answers)) and \
-            res['session_state']['elephant_is_buy']:
+            sessionStorage[user_id]['elephant']:
         # Пользователь согласился, прощаемся.
         res['response']['text'] = f'Кролика можно найти на Яндекс.Маркете!'
         res['response']['end_session'] = True
         return
 
-    if not (res['session_state']['elephant_is_buy']):
+    if not (sessionStorage[user_id]['elephant']):
         # Если нет, то убеждаем его купить слона!
         res['response']['text'] = \
             f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
         res['response']['buttons'] = get_suggests(user_id, 'слон')
         return
 
-    if res['session_state']['elephant_is_buy']:
+    if sessionStorage[user_id]['elephant']:
         # Если нет, то убеждаем его купить кролика!
         res['response']['text'] = \
             f"Все говорят '{req['request']['original_utterance']}', а ты купи кролика!"
