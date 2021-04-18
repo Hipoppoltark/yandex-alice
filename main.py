@@ -53,7 +53,8 @@ def main():
         'session': request.json['session'],
         'version': request.json['version'],
         'response': {
-            'end_session': False
+            'end_session': False,
+            'elephant_is_buy': False
         }
     }
 
@@ -69,6 +70,7 @@ def main():
 
 
 def handle_dialog(req, res):
+    global index_things
     user_id = req['session']['user_id']
 
     if req['session']['new']:
@@ -84,9 +86,9 @@ def handle_dialog(req, res):
             ]
         }
         # Заполняем текст ответа
-        res['response']['text'] = 'Привет! Купи слона!'
+        res['response']['text'] = f'Привет! Купи слона!'
         # Получим подсказки
-        res['response']['buttons'] = get_suggests(user_id)
+        res['response']['buttons'] = get_suggests(user_id, 'слон')
         return
 
     # Сюда дойдем только, если пользователь не новый,
@@ -97,20 +99,36 @@ def handle_dialog(req, res):
     # Если он написал 'ладно', 'куплю', 'покупаю', 'хорошо',
     # то мы считаем, что пользователь согласился.
     # Подумайте, всё ли в этом фрагменте написано "красиво"?
-    if list(filter(lambda x: x in req['request']['original_utterance'].lower(), answers)):
+    if list(filter(lambda x: x in req['request']['original_utterance'].lower(), answers)) and \
+            not(res['response']['elephant_is_buy']):
+        # Пользователь согласился, продолжаем предлагать товары.
+        res['response']['text'] = f'Слона можно найти на ' \
+                                  f'Яндекс.Маркете! А пока еще купите кролика'
+        res['response']['buttons'] = get_suggests(user_id, 'кролик')
+        return
+
+    if list(filter(lambda x: x in req['request']['original_utterance'].lower(), answers)) and \
+            res['response']['elephant_is_buy']:
         # Пользователь согласился, прощаемся.
-        res['response']['text'] = 'Слона можно найти на Яндекс.Маркете!'
+        res['response']['text'] = f'Кролика можно найти на Яндекс.Маркете!'
         res['response']['end_session'] = True
         return
 
-    # Если нет, то убеждаем его купить слона!
-    res['response']['text'] = \
-        f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
-    res['response']['buttons'] = get_suggests(user_id)
+    if not (res['response']['elephant_is_buy']):
+        # Если нет, то убеждаем его купить слона!
+        res['response']['text'] = \
+            f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
+        res['response']['buttons'] = get_suggests(user_id, 'слон')
+
+    if res['response']['elephant_is_buy']:
+        # Если нет, то убеждаем его купить кролика!
+        res['response']['text'] = \
+            f"Все говорят '{req['request']['original_utterance']}', а ты купи кролика!"
+        res['response']['buttons'] = get_suggests(user_id, 'кролик')
 
 
 # Функция возвращает две подсказки для ответа.
-def get_suggests(user_id):
+def get_suggests(user_id, text_search):
     session = sessionStorage[user_id]
 
     # Выбираем две первые подсказки из массива.
