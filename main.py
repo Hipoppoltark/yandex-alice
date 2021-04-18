@@ -49,20 +49,16 @@ def main():
     # Начинаем формировать ответ, согласно документации
     # мы собираем словарь, который потом при помощи
     # библиотеки json преобразуем в JSON и отдадим Алисе
-    try:
-        if list(filter(lambda x: x in request.json['request']['original_utterance'].lower())):
-            elephant = True
-        else:
-            elephant = False
-    except Exception:
-        elephant = False
     response = {
         'session': request.json['session'],
         'version': request.json['version'],
         'response': {
             'end_session': False,
-            'elephant_is_buy': elephant
+        },
+        "session_state": {
+            'elephant_is_buy': False
         }
+
     }
 
     # Отправляем request.json и response в функцию handle_dialog.
@@ -106,8 +102,8 @@ def handle_dialog_elephant(req, res):
     # то мы считаем, что пользователь согласился.
     # Подумайте, всё ли в этом фрагменте написано "красиво"?
     if list(filter(lambda x: x in req['request']['original_utterance'].lower(), answers)) and \
-            not(res['response']['elephant_is_buy']):
-        res['response']['elephant_is_buy'] = True
+            not(res['session_state']['elephant_is_buy']):
+        res['session_state']['elephant_is_buy'] = True
         # Пользователь согласился, продолжаем предлагать товары.
         res['response']['text'] = f'Слона можно найти на ' \
                                   f'Яндекс.Маркете! А пока еще купите кролика'
@@ -115,21 +111,20 @@ def handle_dialog_elephant(req, res):
         return
 
     if list(filter(lambda x: x in req['request']['original_utterance'].lower(), answers)) and \
-            res['response']['elephant_is_buy']:
+            res['session_state']['elephant_is_buy']:
         # Пользователь согласился, прощаемся.
         res['response']['text'] = f'Кролика можно найти на Яндекс.Маркете!'
         res['response']['end_session'] = True
         return
 
-    if not (res['response']['elephant_is_buy']):
+    if not (res['session_state']['elephant_is_buy']):
         # Если нет, то убеждаем его купить слона!
         res['response']['text'] = \
             f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
         res['response']['buttons'] = get_suggests(user_id, 'слон')
         return
 
-    if res['response']['elephant_is_buy']:
-        res['response']['elephant_is_buy'] = True
+    if res['session_state']['elephant_is_buy']:
         # Если нет, то убеждаем его купить кролика!
         res['response']['text'] = \
             f"Все говорят '{req['request']['original_utterance']}', а ты купи кролика!"
@@ -166,4 +161,3 @@ def get_suggests(user_id, text_search):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
