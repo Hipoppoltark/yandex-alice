@@ -117,12 +117,8 @@ def handle_dialog(res, req):
         res['response']['card'] = {}
         res['response']['card']['type'] = 'BigImage'
         res['response']['card']['title'] = 'Что это за город?'
-        images_city = []
-        for elem in cities[city]:
-            if elem not in sessionStorage[user_id]['images_for_show']:
-                images_city.append(elem)
-        image_for_show = random.choice(images_city)
-        sessionStorage[user_id]['guessed_city'].append(image_for_show)
+        image_for_show = random.choice(list(cities[city]))
+        sessionStorage[user_id]['images_for_show'].append(image_for_show)
         res['response']['card']['image_id'] = image_for_show
         res['response']['text'] = 'Что это за город?'
         return
@@ -151,6 +147,14 @@ def handle_dialog(res, req):
                 ]
                 return
             res['response']['text'] = 'Я не знаю такого города.'
+            images_city = []
+            for elem in cities[sessionStorage[user_id]['now_city']]:
+                if elem not in sessionStorage[user_id]['images_for_show']:
+                    images_city.append(elem)
+            image_for_show = random.choice(images_city)
+            sessionStorage[user_id]['images_for_show'].append(image_for_show)
+            res['response']['card']['image_id'] = image_for_show
+            res['response']['text'] = 'Что это за город?'
             return
         elif answer_user == sessionStorage[user_id]['now_city']:
             if sessionStorage[user_id]['guessed_city'] == list(cities.keys()):
