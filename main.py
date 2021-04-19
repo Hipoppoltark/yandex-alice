@@ -81,6 +81,7 @@ def handle_dialog(res, req):
         if first_name is None:
             res['response']['text'] = \
                 'Не расслышала имя. Повтори, пожалуйста!'
+            return
         # если нашли, то приветствуем пользователя.
         # И спрашиваем какой город он хочет увидеть.
         else:
