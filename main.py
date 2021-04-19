@@ -121,7 +121,7 @@ def handle_dialog(res, req):
         elif answer_user != sessionStorage[user_id]['now_city']:
             res['response']['text'] = 'Я не знаю такого города.'
             return
-        elif answer_user != sessionStorage[user_id]['now_city']:
+        elif answer_user == sessionStorage[user_id]['now_city']:
             res['response']['text'] = 'Правильно. Сыграем еще?'
             sessionStorage[user_id]['start_game'] = False
             res['response']['buttons'] = [
