@@ -61,7 +61,9 @@ def handle_dialog(res, req):
         res['response']['text'] = 'Привет! Назови свое имя!'
         # создаем словарь в который в будущем положим имя пользователя
         sessionStorage[user_id] = {
-            'first_name': None
+            'first_name': None,
+            'start_game': False,
+            'now_city': None
         }
         return
 
@@ -82,34 +84,57 @@ def handle_dialog(res, req):
             res['response'][
                 'text'] = 'Приятно познакомиться, ' \
                           + first_name.title() \
-                          + '. Я - Алиса. Какой город хочешь увидеть?'
+                          + '. Я - Алиса. Сыграем в угадай город?'
             # получаем варианты buttons из ключей нашего словаря cities
             res['response']['buttons'] = [
                 {
-                    'title': city.title(),
+                    'title': 'Да',
                     'hide': True
-                } for city in cities
+                },
+                {
+                    'title': 'Нет',
+                    'hide': True
+                }
             ]
+            return
+    if req['request']['text'] == 'Нет' and not(sessionStorage[user_id]['start_game']):
+        res['response']['end_session'] = True
     # если мы знакомы с пользователем и он нам что-то написал,
     # то это говорит о том, что он уже говорит о городе,
     # что хочет увидеть.
+    elif req['request']['text'] == 'Да' and not(sessionStorage[user_id]['start_game']):
+        sessionStorage[user_id]['start_game'] = True
+        city = random.choice(cities.keys())
+        sessionStorage[user_id]['now_city'] = city
+        res['response']['card']['image_id'] = random.choice(cities[city])
+        res['response']['text'] = 'Что это за город?'
+        return
     else:
-        # ищем город в сообщение от пользователя
-        city = get_city(req)
-        # если этот город среди известных нам,
-        # то показываем его (выбираем одну из двух картинок случайно)
-        if city in cities:
-            res['response']['card'] = {}
-            res['response']['card']['type'] = 'BigImage'
-            res['response']['card']['title'] = 'Этот город я знаю.'
-            res['response']['card']['image_id'] = random.choice(cities[city])
-            res['response']['text'] = 'Я угадал!'
-        # если не нашел, то отвечает пользователю
-        # 'Первый раз слышу об этом городе.'
-        else:
-            res['response']['text'] = \
-                'Первый раз слышу об этом городе. Попробуй еще разок!'
-
+        answer_user = get_city(req)
+        if answer_user is None:
+            res['response']['text'] = 'Я не знаю такого города.'
+            return
+        elif answer_user != sessionStorage[user_id]['now_city']:
+            res['response']['text'] = 'Я не знаю такого города.'
+            return
+        elif answer_user != sessionStorage[user_id]['now_city']:
+            res['response']['text'] = 'Правильно. Сыграем еще?'
+            sessionStorage[user_id]['start_game'] = False
+            res['response']['buttons'] = [
+                {
+                    'title': 'Да',
+                    'hide': True
+                },
+                {
+                    'title': 'Нет',
+                    'hide': True
+                },
+                {
+                    'title': 'Покажи город на карте',
+                    'url': f'https://yandex.ru/maps/?mode=search&text={sessionStorage[user_id]["now_city"]}',
+                    'hide': True
+                }
+            ]
 
 def get_city(req):
     # перебираем именованные сущности
