@@ -97,12 +97,13 @@ def handle_dialog(res, req):
                 }
             ]
             return
-    if req['request']['text'] == 'Нет' and not(sessionStorage[user_id]['start_game']):
+    if req['request']['original_utterance'].lower() == 'нет' and not(sessionStorage[user_id]['start_game']):
         res['response']['end_session'] = True
+        return
     # если мы знакомы с пользователем и он нам что-то написал,
     # то это говорит о том, что он уже говорит о городе,
     # что хочет увидеть.
-    elif req['request']['text'] == 'Да' and not(sessionStorage[user_id]['start_game']):
+    elif req['request']['original_utterance'].lower() == 'да' and not(sessionStorage[user_id]['start_game']):
         sessionStorage[user_id]['start_game'] = True
         city = random.choice(cities.keys())
         sessionStorage[user_id]['now_city'] = city
