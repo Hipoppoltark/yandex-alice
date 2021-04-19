@@ -164,7 +164,11 @@ def handle_dialog(res, req):
                 res['response']['end_session'] = True
                 return
             res['response']['text'] = 'Правильно. Сыграем еще?'
+            sessionStorage[user_id]['now_city'] = None
             sessionStorage[user_id]['start_game'] = False
+            sessionStorage[user_id]['guessed_city'] = []
+            sessionStorage[user_id]['images_for_show'] = []
+            sessionStorage[user_id]['user_right_answer_city'] = False
             res['response']['buttons'] = [
                 {
                     'title': 'Да',
@@ -180,7 +184,7 @@ def handle_dialog(res, req):
                     'hide': True
                 }
             ]
-            return 
+            return
         elif answer_user is None or answer_user != sessionStorage[user_id]['now_city'] and \
                 not(sessionStorage[user_id]['user_right_answer_city']):
             if sessionStorage[user_id]['images_for_show'] == cities[sessionStorage[user_id]['now_city']]:
@@ -190,6 +194,7 @@ def handle_dialog(res, req):
                 sessionStorage[user_id]['start_game'] = False
                 sessionStorage[user_id]['guessed_city'] = []
                 sessionStorage[user_id]['images_for_show'] = []
+                sessionStorage[user_id]['user_right_answer_city'] = False
                 res['response']['buttons'] = [
                     {
                         'title': 'Да',
