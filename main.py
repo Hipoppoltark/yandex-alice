@@ -103,6 +103,7 @@ def handle_dialog(res, req):
             ]
             return
     if req['request']['original_utterance'].lower() == 'нет' and not(sessionStorage[user_id]['start_game']):
+        res['response']['text'] = 'Тогда, пока'
         res['response']['end_session'] = True
         return
     # если мы знакомы с пользователем и он нам что-то написал,
