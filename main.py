@@ -124,6 +124,16 @@ def handle_dialog(res, req):
         return
     if not(sessionStorage[user_id]['start_game']):
         res['response']['text'] = 'Не поняла. Так да или нет?'
+        res['response']['buttons'] = [
+            {
+                'title': 'Да',
+                'hide': True
+            },
+            {
+                'title': 'Нет',
+                'hide': True
+            }
+        ]
         return
     else:
         answer_user = get_city(req)
@@ -155,12 +165,12 @@ def handle_dialog(res, req):
             sessionStorage[user_id]['images_for_show'].append(image_for_show)
             res['response']['card'] = {}
             res['response']['card']['type'] = 'BigImage'
-            res['response']['card']['title'] = 'Что это за город?'
+            res['response']['card']['title'] = 'Вот еще фотография этого города. Есть мысли?'
             res['response']['card']['image_id'] = image_for_show
             res['response']['text'] = 'Вот еще фотография этого города. Есть мысли?'
             return
         elif answer_user == sessionStorage[user_id]['now_city']:
-            if sessionStorage[user_id]['guessed_city'] == list(cities.keys()):
+            if len(sessionStorage[user_id]['guessed_city']) == len(list(cities.keys())):
                 res['response']['text'] = 'Что ж, у меня закончились все города. Приходи позже, поиграем.'
                 res['response']['end_session'] = True
                 return
