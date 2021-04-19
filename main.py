@@ -13,12 +13,12 @@ logging.basicConfig(level=logging.INFO)
 # которые мы записали в прошлом пункте.
 
 cities = {
-    'москва': ['1030494/e03dd6cbae8a79d9d43b',
-               '1652229/83a36487ffdc7aa60ea6'],
-    'нью-йорк': ['1652229/aa05a7a54bd5101fe0f6',
-                 '1521359/103a9d92c4564eef8a64'],
-    'париж': ["1030494/6e5717e4148f18216d12",
-              '213044/4016b2ee880fa2a0895b']
+    'москва': (['1030494/e03dd6cbae8a79d9d43b',
+               '1652229/83a36487ffdc7aa60ea6'], 'Россия'),
+    'нью-йорк': (['1652229/aa05a7a54bd5101fe0f6',
+                 '1521359/103a9d92c4564eef8a64'], 'США'),
+    'париж': (["1030494/6e5717e4148f18216d12",
+              '213044/4016b2ee880fa2a0895b'], 'Франция')
 }
 
 # создаем словарь, где для каждого пользователя
@@ -62,7 +62,8 @@ def handle_dialog(res, req):
             'start_game': False,
             'now_city': None,
             'guessed_city': [],
-            'images_for_show': []
+            'images_for_show': [],
+            'user_right_answer_city': False
         }
         return
 
@@ -121,7 +122,7 @@ def handle_dialog(res, req):
         res['response']['card'] = {}
         res['response']['card']['type'] = 'BigImage'
         res['response']['card']['title'] = 'Что это за город?'
-        image_for_show = random.choice(list(cities[city]))
+        image_for_show = random.choice(cities[city][0])
         sessionStorage[user_id]['images_for_show'].append(image_for_show)
         res['response']['card']['image_id'] = image_for_show
         res['response']['text'] = 'Что это за город?'
@@ -140,7 +141,21 @@ def handle_dialog(res, req):
         ]
         return
     else:
-        answer_user = get_city(req)
+        if sessionStorage[user_id]['user_right_answer_city']:
+            answer_user = get_country(req)
+        else:
+            answer_user = get_city(req)
+        if answer_user == sessionStorage[user_id]['now_city']:
+            sessionStorage[user_id]['user_right_answer_city'] = True
+            res['response']['text'] = 'Правильно! А в какой стране находится этот город?'
+            return
+        if sessionStorage[user_id]['user_right_answer_city'] and answer_user is None:
+            res['response']['text'] = 'Похоже, такой страны нет.'
+            return
+        if sessionStorage[user_id]['user_right_answer_city'] and \
+                answer_user.lower() != cities[answer_user != sessionStorage[user_id]['now_city']][1]:
+            res['response']['text'] = 'Неправильно'
+            return
         if answer_user is None or answer_user != sessionStorage[user_id]['now_city']:
             if sessionStorage[user_id]['images_for_show'] == cities[sessionStorage[user_id]['now_city']]:
                 res['response']['text'] = f'Вы пытались. Это {sessionStorage[user_id]["now_city"]}.' \
@@ -162,7 +177,7 @@ def handle_dialog(res, req):
                 return
             res['response']['text'] = 'Я не знаю такого города.'
             images_city = []
-            for elem in cities[sessionStorage[user_id]['now_city']]:
+            for elem in cities[sessionStorage[user_id]['now_city']][0]:
                 if elem not in sessionStorage[user_id]['images_for_show']:
                     images_city.append(elem)
             image_for_show = random.choice(images_city)
@@ -173,7 +188,9 @@ def handle_dialog(res, req):
             res['response']['card']['image_id'] = image_for_show
             res['response']['text'] = 'Вот еще фотография этого города. Есть мысли?'
             return
-        elif answer_user == sessionStorage[user_id]['now_city']:
+        elif sessionStorage[user_id]['user_right_answer_city'] and \
+                answer_user.lower() != cities[answer_user == sessionStorage[user_id]['now_city']][1]:
+
             if len(sessionStorage[user_id]['guessed_city']) == len(list(cities.keys())):
                 res['response']['text'] = 'Что ж, у меня закончились все города. Приходи позже, поиграем.'
                 res['response']['end_session'] = True
@@ -205,6 +222,16 @@ def get_city(req):
         if entity['type'] == 'YANDEX.GEO':
             # возвращаем None, если не нашли сущности с типом YANDEX.GEO
             return entity['value'].get('city', None)
+
+
+def get_country(req):
+    # перебираем именованные сущности
+    for entity in req['request']['nlu']['entities']:
+        # если тип YANDEX.GEO то пытаемся получить город(city),
+        # если нет, то возвращаем None
+        if entity['type'] == 'YANDEX.GEO':
+            # возвращаем None, если не нашли сущности с типом YANDEX.GEO
+            return entity['value'].get('country', None)
 
 
 def get_first_name(req):
