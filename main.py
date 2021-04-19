@@ -107,8 +107,10 @@ def handle_dialog(res, req):
         sessionStorage[user_id]['start_game'] = True
         city = random.choice(list(cities.keys()))
         sessionStorage[user_id]['now_city'] = city
+        res['response']['card'] = {}
+        res['response']['card']['type'] = 'BigImage'
+        res['response']['card']['title'] = 'Что это за город?'
         res['response']['card']['image_id'] = random.choice(cities[city])
-        res['response']['text'] = 'Что это за город?'
         return
     else:
         answer_user = get_city(req)
