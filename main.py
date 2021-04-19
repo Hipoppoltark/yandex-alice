@@ -63,7 +63,9 @@ def handle_dialog(res, req):
         sessionStorage[user_id] = {
             'first_name': None,
             'start_game': False,
-            'now_city': None
+            'now_city': None,
+            'guessed_city': [],
+            'images_for_show': []
         }
         return
 
@@ -103,25 +105,58 @@ def handle_dialog(res, req):
     # если мы знакомы с пользователем и он нам что-то написал,
     # то это говорит о том, что он уже говорит о городе,
     # что хочет увидеть.
-    elif req['request']['original_utterance'].lower() == 'да' and not(sessionStorage[user_id]['start_game']):
+    if req['request']['original_utterance'].lower() == 'да' and not(sessionStorage[user_id]['start_game']):
         sessionStorage[user_id]['start_game'] = True
-        city = random.choice(list(cities.keys()))
+        stay_cities = []
+        for elem in cities.keys():
+            if elem not in sessionStorage[user_id]['guessed_city']:
+                stay_cities.append(elem)
+        city = random.choice(stay_cities)
+        sessionStorage[user_id]['guessed_city'].append(city)
         sessionStorage[user_id]['now_city'] = city
         res['response']['card'] = {}
         res['response']['card']['type'] = 'BigImage'
         res['response']['card']['title'] = 'Что это за город?'
-        res['response']['card']['image_id'] = random.choice(cities[city])
+        images_city = []
+        for elem in cities[city]:
+            if elem not in sessionStorage[user_id]['images_for_show']:
+                images_city.append(elem)
+        image_for_show = random.choice(images_city)
+        sessionStorage[user_id]['guessed_city'].append(image_for_show)
+        res['response']['card']['image_id'] = image_for_show
         res['response']['text'] = 'Что это за город?'
+        return
+    if not(sessionStorage[user_id]['start_game']):
+        res['response']['text'] = 'Не поняла. Так да или нет?'
         return
     else:
         answer_user = get_city(req)
-        if answer_user is None:
-            res['response']['text'] = 'Я не знаю такого города.'
-            return
-        elif answer_user != sessionStorage[user_id]['now_city']:
+        if answer_user is None or answer_user != sessionStorage[user_id]['now_city']:
+            if sessionStorage[user_id]['images_for_show'] == cities[sessionStorage[user_id]['now_city']]:
+                res['response']['text'] = f'Вы пытались. Это {sessionStorage[user_id]["now_city"]}.' \
+                                          f'Сыграем еще?'
+                sessionStorage[user_id]['now_city'] = None
+                sessionStorage[user_id]['start_game'] = False
+                sessionStorage[user_id]['guessed_city'] = []
+                sessionStorage[user_id]['images_for_show'] = []
+                res['response']['buttons'] = [
+                    {
+                        'title': 'Да',
+                        'hide': True
+                    },
+                    {
+                        'title': 'Нет',
+                        'hide': True
+                    }
+                ]
+                return
             res['response']['text'] = 'Я не знаю такого города.'
             return
         elif answer_user == sessionStorage[user_id]['now_city']:
+            if sessionStorage[user_id]['guessed_city'] == list(cities.keys()):
+                res['response']['text'] = 'Что ж, у меня закончились все города. Приходи позже, поиграем.'
+                res['response']['end_session'] = True
+                return
             res['response']['text'] = 'Правильно. Сыграем еще?'
             sessionStorage[user_id]['start_game'] = False
             res['response']['buttons'] = [
@@ -136,9 +171,10 @@ def handle_dialog(res, req):
                 {
                     'title': 'Покажи город на карте',
                     'url': f'https://yandex.ru/maps/?mode=search&text={sessionStorage[user_id]["now_city"]}',
-                    'hide': False
+                    'hide': True
                 }
             ]
+
 
 def get_city(req):
     # перебираем именованные сущности
