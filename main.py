@@ -74,7 +74,8 @@ def handle_dialog(res, req):
     # что пользователь еще не представился.
     if sessionStorage[user_id]['first_name'] is None:
         # в последнем его сообщение ищем имя.
-        first_name = get_first_name(req)
+        if req['request']['original_utterance'].lower() != 'помощь':
+            first_name = get_first_name(req)
         # если не нашли, то сообщаем пользователю что не расслышали.
         if first_name is None:
             res['response']['text'] = \
