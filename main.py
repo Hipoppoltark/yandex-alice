@@ -156,8 +156,33 @@ def handle_dialog(res, req):
                 answer_user.lower() != cities[sessionStorage[user_id]['now_city']][1]:
             res['response']['text'] = 'Неправильно'
             return
-        if answer_user is None or answer_user != sessionStorage[user_id]['now_city'] and \
-                sessionStorage[user_id]['user_right_answer_city']:
+        if sessionStorage[user_id]['user_right_answer_city'] and \
+                answer_user.lower() == cities[sessionStorage[user_id]['now_city']][1]:
+
+            if len(sessionStorage[user_id]['guessed_city']) == len(list(cities.keys())):
+                res['response']['text'] = 'Что ж, у меня закончились все города. Приходи позже, поиграем.'
+                res['response']['end_session'] = True
+                return
+            res['response']['text'] = 'Правильно. Сыграем еще?'
+            sessionStorage[user_id]['start_game'] = False
+            res['response']['buttons'] = [
+                {
+                    'title': 'Да',
+                    'hide': True
+                },
+                {
+                    'title': 'Нет',
+                    'hide': True
+                },
+                {
+                    'title': 'Покажи город на карте',
+                    'url': f'https://yandex.ru/maps/?mode=search&text={sessionStorage[user_id]["now_city"]}',
+                    'hide': True
+                }
+            ]
+            return 
+        elif answer_user is None or answer_user != sessionStorage[user_id]['now_city'] and \
+                not(sessionStorage[user_id]['user_right_answer_city']):
             if sessionStorage[user_id]['images_for_show'] == cities[sessionStorage[user_id]['now_city']]:
                 res['response']['text'] = f'Вы пытались. Это {sessionStorage[user_id]["now_city"]}.' \
                                           f'Сыграем еще?'
@@ -187,31 +212,6 @@ def handle_dialog(res, req):
             res['response']['card']['title'] = 'Вот еще фотография этого города. Есть мысли?'
             res['response']['card']['image_id'] = image_for_show
             res['response']['text'] = 'Вот еще фотография этого города. Есть мысли?'
-            return
-        elif sessionStorage[user_id]['user_right_answer_city'] and \
-                answer_user.lower() == cities[sessionStorage[user_id]['now_city']][1]:
-
-            if len(sessionStorage[user_id]['guessed_city']) == len(list(cities.keys())):
-                res['response']['text'] = 'Что ж, у меня закончились все города. Приходи позже, поиграем.'
-                res['response']['end_session'] = True
-                return
-            res['response']['text'] = 'Правильно. Сыграем еще?'
-            sessionStorage[user_id]['start_game'] = False
-            res['response']['buttons'] = [
-                {
-                    'title': 'Да',
-                    'hide': True
-                },
-                {
-                    'title': 'Нет',
-                    'hide': True
-                },
-                {
-                    'title': 'Покажи город на карте',
-                    'url': f'https://yandex.ru/maps/?mode=search&text={sessionStorage[user_id]["now_city"]}',
-                    'hide': True
-                }
-            ]
 
 
 def get_city(req):
