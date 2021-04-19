@@ -105,7 +105,7 @@ def handle_dialog(res, req):
     # что хочет увидеть.
     elif req['request']['original_utterance'].lower() == 'да' and not(sessionStorage[user_id]['start_game']):
         sessionStorage[user_id]['start_game'] = True
-        city = random.choice(cities.keys())
+        city = random.choice(list(cities.keys()))
         sessionStorage[user_id]['now_city'] = city
         res['response']['card']['image_id'] = random.choice(cities[city])
         res['response']['text'] = 'Что это за город?'
