@@ -187,7 +187,7 @@ def handle_dialog(res, req):
             return
         elif answer_user is None or answer_user != sessionStorage[user_id]['now_city'] and \
                 not(sessionStorage[user_id]['user_right_answer_city']):
-            if len(sessionStorage[user_id]['images_for_show']) == len(cities[sessionStorage[user_id]['now_city'][0]]):
+            if len(sessionStorage[user_id]['images_for_show']) == len(cities[sessionStorage[user_id]['now_city']][0]):
                 res['response']['text'] = f'Вы пытались. Это {sessionStorage[user_id]["now_city"]}.' \
                                           f'Сыграем еще?'
                 sessionStorage[user_id]['now_city'] = None
