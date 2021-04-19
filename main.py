@@ -156,7 +156,8 @@ def handle_dialog(res, req):
                 answer_user.lower() != cities[sessionStorage[user_id]['now_city']][1]:
             res['response']['text'] = 'Неправильно'
             return
-        if answer_user is None or answer_user != sessionStorage[user_id]['now_city']:
+        if answer_user is None or answer_user != sessionStorage[user_id]['now_city'] and \
+                sessionStorage[user_id]['user_right_answer_city']:
             if sessionStorage[user_id]['images_for_show'] == cities[sessionStorage[user_id]['now_city']]:
                 res['response']['text'] = f'Вы пытались. Это {sessionStorage[user_id]["now_city"]}.' \
                                           f'Сыграем еще?'
