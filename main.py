@@ -51,9 +51,6 @@ def main():
 
 
 def handle_dialog(res, req):
-    if 'payload' in req['request'] and 'help' in req['request']['payload']:
-        res['response']['text'] = 'Это справка'
-        return
     user_id = req['session']['user_id']
 
     # если пользователь новый, то просим его представиться.
@@ -67,6 +64,10 @@ def handle_dialog(res, req):
             'guessed_city': [],
             'images_for_show': []
         }
+        return
+
+    if 'payload' in req['request'] and 'help' in req['request']['payload']:
+        res['response']['text'] = 'Это справка'
         return
 
     # если пользователь не новый, то попадаем сюда.
