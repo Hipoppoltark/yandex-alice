@@ -166,7 +166,6 @@ def handle_dialog(res, req):
             res['response']['text'] = 'Правильно. Сыграем еще?'
             sessionStorage[user_id]['now_city'] = None
             sessionStorage[user_id]['start_game'] = False
-            sessionStorage[user_id]['guessed_city'] = []
             sessionStorage[user_id]['images_for_show'] = []
             sessionStorage[user_id]['user_right_answer_city'] = False
             res['response']['buttons'] = [
@@ -192,7 +191,6 @@ def handle_dialog(res, req):
                                           f'Сыграем еще?'
                 sessionStorage[user_id]['now_city'] = None
                 sessionStorage[user_id]['start_game'] = False
-                sessionStorage[user_id]['guessed_city'] = []
                 sessionStorage[user_id]['images_for_show'] = []
                 sessionStorage[user_id]['user_right_answer_city'] = False
                 res['response']['buttons'] = [
