@@ -14,11 +14,11 @@ logging.basicConfig(level=logging.INFO)
 
 cities = {
     'москва': (['1030494/e03dd6cbae8a79d9d43b',
-               '1652229/83a36487ffdc7aa60ea6'], 'Россия'),
+               '1652229/83a36487ffdc7aa60ea6'], 'россия'),
     'нью-йорк': (['1652229/aa05a7a54bd5101fe0f6',
-                 '1521359/103a9d92c4564eef8a64'], 'США'),
+                 '1521359/103a9d92c4564eef8a64'], 'сша'),
     'париж': (["1030494/6e5717e4148f18216d12",
-              '213044/4016b2ee880fa2a0895b'], 'Франция')
+              '213044/4016b2ee880fa2a0895b'], 'франция')
 }
 
 # создаем словарь, где для каждого пользователя
@@ -175,7 +175,6 @@ def handle_dialog(res, req):
                     }
                 ]
                 return
-            res['response']['text'] = 'Я не знаю такого города.'
             images_city = []
             for elem in cities[sessionStorage[user_id]['now_city']][0]:
                 if elem not in sessionStorage[user_id]['images_for_show']:
@@ -189,7 +188,7 @@ def handle_dialog(res, req):
             res['response']['text'] = 'Вот еще фотография этого города. Есть мысли?'
             return
         elif sessionStorage[user_id]['user_right_answer_city'] and \
-                answer_user.lower() != cities[answer_user == sessionStorage[user_id]['now_city']][1]:
+                answer_user.lower() == cities[sessionStorage[user_id]['now_city']][1]:
 
             if len(sessionStorage[user_id]['guessed_city']) == len(list(cities.keys())):
                 res['response']['text'] = 'Что ж, у меня закончились все города. Приходи позже, поиграем.'
