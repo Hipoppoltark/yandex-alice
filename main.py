@@ -153,7 +153,7 @@ def handle_dialog(res, req):
             res['response']['text'] = 'Похоже, такой страны нет.'
             return
         if sessionStorage[user_id]['user_right_answer_city'] and \
-                answer_user.lower() != cities[answer_user != sessionStorage[user_id]['now_city']][1]:
+                answer_user.lower() != cities[sessionStorage[user_id]['now_city']][1]:
             res['response']['text'] = 'Неправильно'
             return
         if answer_user is None or answer_user != sessionStorage[user_id]['now_city']:
