@@ -1,49 +1,82 @@
 from flask import Flask, request
 import logging
 import json
-# импортируем функции из нашего второго файла geo
-from geo import get_country, get_distance, get_coordinates
+import random
 import os
 
 app = Flask(__name__)
 
-# Добавляем логирование в файл.
-# Чтобы найти файл, перейдите на pythonwhere в раздел files,
-# он лежит в корневой папке
-logging.basicConfig(level=logging.INFO, filename='app.log',
-                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logging.basicConfig(level=logging.INFO)
+
+# создаем словарь, в котором ключ — название города,
+# а значение — массив, где перечислены id картинок,
+# которые мы записали в прошлом пункте.
+
+cities = {
+    'москва': ['1030494/e03dd6cbae8a79d9d43b',
+               '1652229/83a36487ffdc7aa60ea6'],
+    'нью-йорк': ['1652229/aa05a7a54bd5101fe0f6',
+                 '1521359/103a9d92c4564eef8a64'],
+    'париж': ["1030494/6e5717e4148f18216d12",
+              '213044/4016b2ee880fa2a0895b']
+}
+
+# создаем словарь, где для каждого пользователя
+# мы будем хранить его имя
 sessionStorage = {}
 
 
 @app.route('/post', methods=['POST'])
 def main():
-    logging.info('Request: %r', request.json)
+    logging.info(f'Request: {request.json!r}')
     response = {
         'session': request.json['session'],
         'version': request.json['version'],
         'response': {
-            'end_session': False
-        }
+            'end_session': False,
+            "buttons": [
+                {
+                    "title": "Помощь",
+                    "payload": {
+                        "help": True
+                    },
+                    "hide": True
+                }
+            ]
+        },
     }
     handle_dialog(response, request.json)
-    logging.info('Request: %r', response)
+    logging.info(f'Response: {response!r}')
     return json.dumps(response)
 
 
 def handle_dialog(res, req):
     user_id = req['session']['user_id']
 
+    # если пользователь новый, то просим его представиться.
     if req['session']['new']:
         res['response']['text'] = 'Привет! Назови свое имя!'
         # создаем словарь в который в будущем положим имя пользователя
         sessionStorage[user_id] = {
             'first_name': None,
+            'start_game': False,
+            'now_city': None,
+            'guessed_city': [],
+            'images_for_show': []
         }
         return
 
+    if 'payload' in req['request'] and 'help' in req['request']['payload']:
+        res['response']['text'] = 'Это справка'
+        return
+
+    # если пользователь не новый, то попадаем сюда.
+    # если поле имени пустое, то это говорит о том,
+    # что пользователь еще не представился.
     if sessionStorage[user_id]['first_name'] is None:
         # в последнем его сообщение ищем имя.
-        first_name = get_first_name(req)
+        if req['request']['original_utterance'].lower() != 'помощь':
+            first_name = get_first_name(req)
         # если не нашли, то сообщаем пользователю что не расслышали.
         if first_name is None:
             res['response']['text'] = \
@@ -56,31 +89,122 @@ def handle_dialog(res, req):
             res['response'][
                 'text'] = 'Приятно познакомиться, ' \
                           + first_name.title() \
-                          + '. Я - Алиса. Я могу показать город или сказать расстояние между городами!'
+                          + '. Я - Алиса. Сыграем в угадай город?'
+            # получаем варианты buttons из ключей нашего словаря cities
+            res['response']['buttons'] = [
+                {
+                    'title': 'Да',
+                    'hide': True
+                },
+                {
+                    'title': 'Нет',
+                    'hide': True
+                }
+            ]
             return
-    # Получаем города из нашего
-    cities = get_cities(req)
-    if not cities:
-        res['response']['text'] = f'{sessionStorage[user_id]["first_name"]},ты не написал название не одного города!'
-    elif len(cities) == 1:
-        res['response']['text'] = f'{sessionStorage[user_id]["first_name"]}, этот город в стране - ' + \
-                                  get_country(cities[0])
-    elif len(cities) == 2:
-        distance = get_distance(get_coordinates(
-            cities[0]), get_coordinates(cities[1]))
-        res['response']['text'] = f'{sessionStorage[user_id]["first_name"]}, расстояние между этими городами: ' + \
-                                  str(round(distance)) + ' км.'
+    if req['request']['original_utterance'].lower() == 'нет' and not(sessionStorage[user_id]['start_game']):
+        res['response']['text'] = 'Тогда, пока'
+        res['response']['end_session'] = True
+        return
+    # если мы знакомы с пользователем и он нам что-то написал,
+    # то это говорит о том, что он уже говорит о городе,
+    # что хочет увидеть.
+    if req['request']['original_utterance'].lower() == 'да' and not(sessionStorage[user_id]['start_game']):
+        sessionStorage[user_id]['start_game'] = True
+        stay_cities = []
+        for elem in cities.keys():
+            if elem not in sessionStorage[user_id]['guessed_city']:
+                stay_cities.append(elem)
+        city = random.choice(stay_cities)
+        sessionStorage[user_id]['guessed_city'].append(city)
+        sessionStorage[user_id]['now_city'] = city
+        res['response']['card'] = {}
+        res['response']['card']['type'] = 'BigImage'
+        res['response']['card']['title'] = 'Что это за город?'
+        image_for_show = random.choice(list(cities[city]))
+        sessionStorage[user_id]['images_for_show'].append(image_for_show)
+        res['response']['card']['image_id'] = image_for_show
+        res['response']['text'] = 'Что это за город?'
+        return
+    if not(sessionStorage[user_id]['start_game']):
+        res['response']['text'] = 'Не поняла. Так да или нет?'
+        res['response']['buttons'] = [
+            {
+                'title': 'Да',
+                'hide': True
+            },
+            {
+                'title': 'Нет',
+                'hide': True
+            }
+        ]
+        return
     else:
-        res['response']['text'] = f'{sessionStorage[user_id]["first_name"]}, слишком много городов!'
+        answer_user = get_city(req)
+        if answer_user is None or answer_user != sessionStorage[user_id]['now_city']:
+            if sessionStorage[user_id]['images_for_show'] == cities[sessionStorage[user_id]['now_city']]:
+                res['response']['text'] = f'Вы пытались. Это {sessionStorage[user_id]["now_city"]}.' \
+                                          f'Сыграем еще?'
+                sessionStorage[user_id]['now_city'] = None
+                sessionStorage[user_id]['start_game'] = False
+                sessionStorage[user_id]['guessed_city'] = []
+                sessionStorage[user_id]['images_for_show'] = []
+                res['response']['buttons'] = [
+                    {
+                        'title': 'Да',
+                        'hide': True
+                    },
+                    {
+                        'title': 'Нет',
+                        'hide': True
+                    }
+                ]
+                return
+            res['response']['text'] = 'Я не знаю такого города.'
+            images_city = []
+            for elem in cities[sessionStorage[user_id]['now_city']]:
+                if elem not in sessionStorage[user_id]['images_for_show']:
+                    images_city.append(elem)
+            image_for_show = random.choice(images_city)
+            sessionStorage[user_id]['images_for_show'].append(image_for_show)
+            res['response']['card'] = {}
+            res['response']['card']['type'] = 'BigImage'
+            res['response']['card']['title'] = 'Вот еще фотография этого города. Есть мысли?'
+            res['response']['card']['image_id'] = image_for_show
+            res['response']['text'] = 'Вот еще фотография этого города. Есть мысли?'
+            return
+        elif answer_user == sessionStorage[user_id]['now_city']:
+            if len(sessionStorage[user_id]['guessed_city']) == len(list(cities.keys())):
+                res['response']['text'] = 'Что ж, у меня закончились все города. Приходи позже, поиграем.'
+                res['response']['end_session'] = True
+                return
+            res['response']['text'] = 'Правильно. Сыграем еще?'
+            sessionStorage[user_id]['start_game'] = False
+            res['response']['buttons'] = [
+                {
+                    'title': 'Да',
+                    'hide': True
+                },
+                {
+                    'title': 'Нет',
+                    'hide': True
+                },
+                {
+                    'title': 'Покажи город на карте',
+                    'url': f'https://yandex.ru/maps/?mode=search&text={sessionStorage[user_id]["now_city"]}',
+                    'hide': True
+                }
+            ]
 
 
-def get_cities(req):
-    cities = []
+def get_city(req):
+    # перебираем именованные сущности
     for entity in req['request']['nlu']['entities']:
+        # если тип YANDEX.GEO то пытаемся получить город(city),
+        # если нет, то возвращаем None
         if entity['type'] == 'YANDEX.GEO':
-            if 'city' in entity['value']:
-                cities.append(entity['value']['city'])
-    return cities
+            # возвращаем None, если не нашли сущности с типом YANDEX.GEO
+            return entity['value'].get('city', None)
 
 
 def get_first_name(req):
