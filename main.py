@@ -110,6 +110,10 @@ def handle_dialog(res, req):
     # то это говорит о том, что он уже говорит о городе,
     # что хочет увидеть.
     if req['request']['original_utterance'].lower() == 'да' and not(sessionStorage[user_id]['start_game']):
+        if len(sessionStorage[user_id]['guessed_city']) == len(list(cities.keys())):
+            res['response']['text'] = 'Что ж, у меня закончились все города. Приходи позже, поиграем.'
+            res['response']['end_session'] = True
+            return
         sessionStorage[user_id]['start_game'] = True
         stay_cities = []
         for elem in cities.keys():
@@ -173,10 +177,6 @@ def handle_dialog(res, req):
             res['response']['text'] = 'Вот еще фотография этого города. Есть мысли?'
             return
         elif answer_user == sessionStorage[user_id]['now_city']:
-            if len(sessionStorage[user_id]['guessed_city']) == len(list(cities.keys())):
-                res['response']['text'] = 'Что ж, у меня закончились все города. Приходи позже, поиграем.'
-                res['response']['end_session'] = True
-                return
             res['response']['text'] = 'Правильно. Сыграем еще?'
             sessionStorage[user_id]['start_game'] = False
             sessionStorage[user_id]['now_city'] = None
