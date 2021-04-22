@@ -146,7 +146,7 @@ def handle_dialog(res, req):
     else:
         answer_user = get_city(req)
         if answer_user is None or answer_user != sessionStorage[user_id]['now_city']:
-            if sessionStorage[user_id]['images_for_show'] == cities[sessionStorage[user_id]['now_city']]:
+            if len(sessionStorage[user_id]['images_for_show']) == len(cities[sessionStorage[user_id]['now_city']]):
                 res['response']['text'] = f'Вы пытались. Это {sessionStorage[user_id]["now_city"]}.' \
                                           f'Сыграем еще?'
                 sessionStorage[user_id]['now_city'] = None
@@ -222,3 +222,4 @@ def get_first_name(req):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
